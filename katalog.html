@@ -163,6 +163,28 @@
   .cc-row small{color:var(--muted);font-size:12px}
   @media (max-width:720px){ .contact-fab span{display:none} .contact-fab{height:52px;padding:0 15px} .contact-card{width:min(288px,86vw)} }
 
+  .navigator{
+    position:absolute; left:16px; bottom:16px; z-index:34;
+    background:#fff; border:1px solid var(--line); box-shadow:var(--shadow);
+    padding:8px; user-select:none;
+    opacity:0; visibility:hidden; transform:translateY(6px); transition:opacity .15s, visibility .15s, transform .15s;
+  }
+  .navigator.show{ opacity:1; visibility:visible; transform:none; }
+  .nav-view{ position:relative; display:flex; gap:0; overflow:hidden; cursor:crosshair; background:#efeadf; touch-action:none; }
+  .nav-view img{ display:block; height:100%; -webkit-user-drag:none; pointer-events:none; }
+  .nav-rect{
+    position:absolute; box-sizing:border-box; border:2px solid var(--green);
+    background:rgba(var(--hot-rgb),.10); pointer-events:none;
+  }
+  .nav-bar{ display:flex; align-items:center; gap:6px; margin-top:8px; }
+  .nav-bar button{
+    width:26px; height:26px; border:1px solid var(--line); background:#f6f6f4; color:var(--ink);
+    display:grid; place-items:center; border-radius:0; font-size:16px; font-weight:700; line-height:1;
+  }
+  .nav-bar button:hover{ border-color:var(--green); color:var(--green); }
+  .nav-zoom{ flex:1; text-align:center; font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--ink); }
+  @media (max-width:720px){ .navigator{ display:none; } }
+
   .drop{position:absolute;inset:0;display:grid;place-items:center;z-index:60;background:var(--paper)}
   .drop.hide{display:none}
   .dz{
@@ -180,27 +202,6 @@
   .dz .sub{margin-top:16px;font-size:12px;color:var(--muted)}
   .dz .curve{height:44px;background:var(--green);border-radius:0 0 50px 50px;margin:-44px -40px 30px;display:grid;place-items:center}
   .dz .curve span{color:#fff;font-weight:700;letter-spacing:.3px}
-
-  .settings{
-    position:absolute;top:var(--bar);right:0;bottom:0;width:360px;max-width:92vw;background:#fff;z-index:50;
-    box-shadow:-10px 0 40px rgba(0,0,0,.15);transform:translateX(100%);transition:transform .2s;overflow:auto;
-  }
-  .settings.open{transform:translateX(0)}
-  .settings h2{margin:0;padding:16px 20px;font-size:16px;border-bottom:1px solid var(--line);background:var(--green);color:#fff;display:flex;justify-content:space-between;align-items:center}
-  .settings h2 button{background:none;border:0;color:#fff}
-  .sgrp{padding:16px 20px;border-bottom:1px solid var(--line)}
-  .sgrp label{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:6px}
-  .sgrp input[type=text]{width:100%;border:1px solid var(--line);border-radius:0;padding:9px 10px;font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-  .sgrp .desc{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5}
-  .sgrp .preset{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-  .sgrp .preset button{border:1px solid var(--line);background:#f6f6f4;border-radius:0;padding:5px 9px;font-size:12px}
-  .sgrp .preset button:hover{border-color:var(--green);color:var(--green)}
-  .stat{display:flex;justify-content:space-between;font-size:13px;padding:4px 0}
-  .stat b{color:var(--green)}
-  .save{width:100%;background:var(--green);color:#fff;border:0;padding:12px;border-radius:0;font-weight:700;font-size:14px;margin-top:4px}
-  .save:hover{background:var(--green-d)}
-  .switch{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600}
-  .switch input{width:18px;height:18px;accent-color:var(--green)}
 
   .loading{position:absolute;inset:0;background:rgba(244,241,234,.9);display:none;place-items:center;z-index:55}
   .loading.show{display:grid}
@@ -258,9 +259,6 @@
   <button class="tool" id="btnFull" title="Helskärm (f)">
     <svg viewBox="0 0 24 24"><path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/></svg>
   </button>
-  <button class="tool" id="btnSettings" title="Inställningar">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.2.62.78 1.05 1.42 1.05H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-  </button>
 </div>
 
 <div class="body">
@@ -289,50 +287,15 @@
         <span>Kontakta oss</span>
       </button>
     </div>
-  </div>
-</div>
 
-<div class="settings" id="settingsPanel">
-  <h2>Inställningar <button id="btnCloseSettings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button></h2>
-
-  <div class="sgrp">
-    <label>Artikelnummer-mönster (RegExp)</label>
-    <input type="text" id="cfgPattern" value="(?<!\d)\d{5,7}(?!\d)">
-    <div class="preset">
-      <button data-p="(?<!\d)\d{5,7}(?!\d)">5–7 siffror (standard)</button>
-      <button data-p="(?<!\d)\d{5,6}(?!\d)">5–6 siffror</button>
-      <button data-p="(?<!\d)\d{4,7}(?!\d)">4–7 siffror</button>
+    <div class="navigator" id="navigator">
+      <div class="nav-view" id="navView"><div class="nav-rect" id="navRect"></div></div>
+      <div class="nav-bar">
+        <button id="navZoomOut" title="Zooma ut" aria-label="Zooma ut">−</button>
+        <span class="nav-zoom" id="navZoomVal">100%</span>
+        <button id="navZoomIn" title="Zooma in" aria-label="Zooma in">+</button>
+      </div>
     </div>
-    <div class="desc">Kandidat-nummer att leta efter. Ett nummer blir klickbart bara om det matchar en verklig produkt i kartan — MoveTechs artikelnr är 5–6 siffror (t.ex. 81044, 125090).</div>
-  </div>
-
-  <div class="sgrp">
-    <label>Reservlänk (söksträng) — {id} byts mot artikelnumret</label>
-    <input type="text" id="cfgLink" value="">
-    <div class="preset">
-      <button data-l="https://www.movetech.com/advanced_search_result.php?keywords={id}">movetech-sök</button>
-      <button data-l="https://www.google.com/search?q=site:movetech.com+{id}">Google→movetech</button>
-    </div>
-    <div class="desc">Artikelnummer som finns i produktkartan går <b>direkt</b> till produktsidan. Denna länk används bara som reserv för nummer som saknas i kartan (standard = movetech.com:s egen sök).</div>
-  </div>
-
-  <div class="sgrp">
-    <label>Visning</label>
-    <div class="switch"><span>Uppslag (två sidor)</span><input type="checkbox" id="cfgSpread" checked></div>
-    <div class="switch" style="margin-top:10px"><span>Markera klickbara nummer</span><input type="checkbox" id="cfgShowHot" checked></div>
-  </div>
-
-  <div class="sgrp">
-    <label>Denna katalog</label>
-    <div class="stat"><span>Sidor</span><b id="stPages">–</b></div>
-    <div class="stat"><span>Hittade artikelnummer</span><b id="stIds">–</b></div>
-    <div class="stat"><span>Unika artiklar</span><b id="stUniq">–</b></div>
-    <div class="stat"><span>Direktlänk till produkt</span><b id="stMatched">–</b></div>
-  </div>
-
-  <div class="sgrp">
-    <button class="save" id="btnApply">Tillämpa</button>
-    <button class="save" id="btnNewPdf" style="background:#efeadf;color:var(--ink);margin-top:8px">Ladda annan PDF</button>
   </div>
 </div>
 
@@ -364,13 +327,10 @@
     const IMG_BASE = "https://cdn.jsdelivr.net/gh/techymover/movetech-katalog@main/pages/";
     const PDF_URL = "https://cdn.jsdelivr.net/gh/techymover/movetech-katalog@main/katalog.pdf";
     const MANIFEST_URL = "katalog-manifest.json";
-    const cfg = Object.assign({
+    const cfg = {
         spread: true,
         showHot: true
-    }, JSON.parse(localStorage.getItem("mt_katalog_cfg2") || "{}"));
-    function saveCfg() {
-        localStorage.setItem("mt_katalog_cfg2", JSON.stringify(cfg));
-    }
+    };
     let pages = [], numPages = 0, spreads = [], curSpread = 0, userZoom = 1, searchTerm = "";
     function toast(msg) {
         const t = $("#toast");
@@ -409,7 +369,6 @@
         await showSpread(0);
         requestAnimationFrame(() => showSpread(curSpread));
         $("#loading").classList.remove("show");
-        updateStats();
         setTimeout(() => {
             const h = $("#hint");
             if (h) h.style.opacity = "0";
@@ -519,6 +478,7 @@
         resetPan();
         updateGrabCursor();
         preloadAround(idx);
+        updateNavigator();
     }
     function preloadAround(idx) {
         const want = new Set;
@@ -598,18 +558,6 @@
             showSpread(si);
         }));
     }
-    function updateStats() {
-        let total = 0;
-        const uniq = new Set;
-        pages.forEach(p => (p.hot || []).forEach(h => {
-            total++;
-            uniq.add(h.id);
-        }));
-        $("#stPages").textContent = numPages;
-        $("#stIds").textContent = total;
-        $("#stUniq").textContent = uniq.size;
-        $("#stMatched").textContent = uniq.size + " klickbara";
-    }
     function zoom(d) {
         userZoom = Math.max(.5, Math.min(3, +(userZoom + d).toFixed(2)));
         showSpread(curSpread);
@@ -636,6 +584,7 @@
     }
     function applyPan() {
         spreadEl.style.transform = panX || panY ? `translate(${panX}px,${panY}px)` : "";
+        updateNavigator();
     }
     function resetPan() {
         panX = panY = 0;
@@ -689,6 +638,84 @@
         drag = null;
         stageEl.classList.remove("grabbing");
     });
+    const NAV_MAX_W = 190, NAV_MAX_H = 150;
+    const navEl = $("#navigator"), navView = $("#navView"), navRect = $("#navRect");
+    let navSpread = -1, navW = 0, navH = 0;
+    function buildNavigator() {
+        const pgs = spreads[curSpread];
+        let natW = 0, natH = 0;
+        pgs.forEach(n => {
+            natW += pages[n - 1].w;
+            natH = Math.max(natH, pages[n - 1].h);
+        });
+        const s = Math.min(NAV_MAX_W / natW, NAV_MAX_H / natH);
+        navW = Math.round(natW * s);
+        navH = Math.round(natH * s);
+        navView.style.width = navW + "px";
+        navView.style.height = navH + "px";
+        [ ...navView.querySelectorAll("img") ].forEach(x => x.remove());
+        pgs.forEach(n => {
+            const pg = pages[n - 1], im = el("img");
+            im.decoding = "async";
+            im.alt = "";
+            im.style.width = Math.round(pg.w * s) + "px";
+            im.style.height = navH + "px";
+            im.src = IMG_BASE + (pg.thumb || pg.img);
+            navView.insertBefore(im, navRect);
+        });
+        navSpread = curSpread;
+    }
+    function updateNavigator() {
+        const p = pages.length ? pannable() : false;
+        navEl.classList.toggle("show", p);
+        const zv = $("#navZoomVal");
+        if (zv) zv.textContent = Math.round(userZoom * 100) + "%";
+        if (!p) return;
+        if (navSpread !== curSpread || !navW) buildNavigator();
+        const sp = spreadEl.getBoundingClientRect(), st = stageEl.getBoundingClientRect();
+        const SW = sp.width, SH = sp.height, StW = st.width, StH = st.height;
+        const rw = Math.min(1, StW / SW) * navW, rh = Math.min(1, StH / SH) * navH;
+        const cx = .5 - panX / SW, cy = .5 - panY / SH;
+        let rx = cx * navW - rw / 2, ry = cy * navH - rh / 2;
+        rx = Math.max(0, Math.min(navW - rw, rx));
+        ry = Math.max(0, Math.min(navH - rh, ry));
+        navRect.style.left = rx + "px";
+        navRect.style.top = ry + "px";
+        navRect.style.width = rw + "px";
+        navRect.style.height = rh + "px";
+    }
+    function navPointTo(clientX, clientY) {
+        const r = navView.getBoundingClientRect();
+        const cxFrac = Math.max(0, Math.min(1, (clientX - r.left) / navW));
+        const cyFrac = Math.max(0, Math.min(1, (clientY - r.top) / navH));
+        const sp = spreadEl.getBoundingClientRect();
+        panX = sp.width * (.5 - cxFrac);
+        panY = sp.height * (.5 - cyFrac);
+        clampPan();
+        applyPan();
+    }
+    let navDrag = false;
+    navEl.addEventListener("pointerdown", e => e.stopPropagation());
+    navView.addEventListener("pointerdown", e => {
+        navDrag = true;
+        try {
+            navView.setPointerCapture(e.pointerId);
+        } catch (_) {}
+        navPointTo(e.clientX, e.clientY);
+    });
+    navView.addEventListener("pointermove", e => {
+        if (navDrag) navPointTo(e.clientX, e.clientY);
+    });
+    navView.addEventListener("pointerup", () => navDrag = false);
+    navView.addEventListener("pointercancel", () => navDrag = false);
+    navView.addEventListener("wheel", e => {
+        e.preventDefault();
+        zoom(e.deltaY < 0 ? .2 : -.2);
+    }, {
+        passive: false
+    });
+    $("#navZoomIn").onclick = () => zoom(.2);
+    $("#navZoomOut").onclick = () => zoom(-.2);
     $("#navPrev").onclick = $("#btnPrev").onclick = prev;
     $("#navNext").onclick = $("#btnNext").onclick = next;
     $("#btnZoomIn").onclick = () => zoom(.2);
@@ -730,28 +757,6 @@
     document.addEventListener("click", e => {
         if (!e.target.closest(".search")) $("#results").classList.remove("show");
     });
-    $("#btnSettings").onclick = () => {
-        syncSettingsUI();
-        $("#settingsPanel").classList.toggle("open");
-    };
-    $("#btnCloseSettings").onclick = () => $("#settingsPanel").classList.remove("open");
-    function syncSettingsUI() {
-        $("#cfgSpread").checked = cfg.spread;
-        $("#cfgShowHot").checked = cfg.showHot;
-    }
-    if ($("#btnApply")) $("#btnApply").onclick = () => {
-        cfg.spread = $("#cfgSpread").checked;
-        cfg.showHot = $("#cfgShowHot").checked;
-        saveCfg();
-        $("#settingsPanel").classList.remove("open");
-        buildSpreads();
-        curSpread = Math.min(curSpread, spreads.length - 1);
-        showSpread(curSpread);
-    };
-    if ($("#btnNewPdf")) $("#btnNewPdf").style.display = "none";
-    document.querySelectorAll(".sgrp").forEach(g => {
-        if (/RegExp|Reservlänk|Länkmål/.test(g.textContent)) g.style.display = "none";
-    });
     let rT;
     window.addEventListener("resize", () => {
         clearTimeout(rT);
@@ -770,7 +775,6 @@
             $("#q").focus();
         } else if (e.key === "Home") showSpread(0); else if (e.key === "End") showSpread(spreads.length - 1);
     });
-    syncSettingsUI();
     $("#drop").classList.add("hide");
     $("#loading").classList.add("show");
     loadManifest();
