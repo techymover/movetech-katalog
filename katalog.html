@@ -332,6 +332,50 @@
         spread: true,
         showHot: true
     };
+    const CONFIG_URL = "https://crm.movete.ch/api/katalog-config";
+    function applyConfig(c) {
+        if (!c) return;
+        if (c.title) {
+            const tag = document.querySelector(".brand .tag");
+            if (tag) tag.textContent = c.title;
+        }
+        const contact = $("#contact");
+        if (contact) contact.style.display = c.show_contact === false ? "none" : "";
+        if (c.enabled === false) {
+            showDisabled();
+            return;
+        }
+        const spreadChanged = c.spread !== false !== cfg.spread, hotChanged = c.show_hot !== false !== cfg.showHot;
+        cfg.spread = c.spread !== false;
+        cfg.showHot = c.show_hot !== false;
+        if (renderedSpread >= 0 && (spreadChanged || hotChanged)) {
+            buildSpreads();
+            curSpread = Math.min(curSpread, spreads.length - 1);
+            showSpread(curSpread);
+        }
+    }
+    async function loadRemoteConfig() {
+        try {
+            const ctrl = new AbortController;
+            const t = setTimeout(() => ctrl.abort(), 2500);
+            const r = await fetch(CONFIG_URL, {
+                signal: ctrl.signal
+            });
+            clearTimeout(t);
+            if (r.ok) applyConfig(await r.json());
+        } catch (e) {}
+    }
+    function showDisabled() {
+        const b = document.querySelector(".body");
+        if (b) b.style.display = "none";
+        $("#loading").classList.remove("show");
+        if (document.getElementById("kat-off")) return;
+        const d = el("div");
+        d.id = "kat-off";
+        d.style.cssText = "position:absolute;top:var(--bar);left:0;right:0;bottom:0;display:grid;place-items:center;text-align:center;padding:40px";
+        d.innerHTML = '<div><h2 style="margin:0 0 8px">Katalogen är inte tillgänglig just nu</h2><p class="cc-sub" style="font-size:14px">Kontakta oss på <a href="tel:+46196111919">019-611 19 19</a> eller <a href="mailto:info@movetech.com">info@movetech.com</a>.</p></div>';
+        document.body.appendChild(d);
+    }
     let pages = [], numPages = 0, spreads = [], curSpread = 0, userZoom = 1, searchTerm = "";
     function toast(msg) {
         const t = $("#toast");
@@ -362,6 +406,8 @@
         }
         pages = m.pages;
         numPages = pages.length;
+        await Promise.race([ loadRemoteConfig(), new Promise(r => setTimeout(r, 700)) ]);
+        if (document.getElementById("kat-off")) return;
         buildSpreads();
         buildThumbs();
         $("#drop").classList.add("hide");
