@@ -132,6 +132,7 @@
   .nav[disabled]{opacity:0;pointer-events:none}
   .nav svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
   .nav.prev{left:16px}.nav.next{right:16px}
+  .stage.grab .nav{opacity:0;pointer-events:none}
 
   .hint{
     position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:20;
@@ -442,8 +443,8 @@
     function availSize() {
         const st = $("#stage").getBoundingClientRect();
         return {
-            w: Math.min(st.width, window.innerWidth) - 120,
-            h: Math.min(st.height, window.innerHeight) - 40
+            w: st.width - 120,
+            h: st.height - 40
         };
     }
     function fitScaleFor(pgs) {
@@ -455,6 +456,29 @@
             maxH = Math.max(maxH, p.h);
         });
         return Math.min(av.h / maxH, av.w / totW);
+    }
+    function geom() {
+        const st = $("#stage").getBoundingClientRect(), sp = $("#spread").getBoundingClientRect();
+        return {
+            StW: st.width,
+            StH: st.height,
+            SW: sp.width,
+            SH: sp.height
+        };
+    }
+    function applyScale() {
+        const pgs = spreads[curSpread], scale = fitScaleFor(pgs) * userZoom, kids = $("#spread").children;
+        pgs.forEach((n, i) => {
+            const pg = pages[n - 1], dw = Math.round(pg.w * scale), dh = Math.round(pg.h * scale), lf = kids[i];
+            if (!lf) return;
+            lf.style.width = dw + "px";
+            lf.style.height = dh + "px";
+            const im = lf.querySelector("img");
+            if (im) {
+                im.width = dw;
+                im.height = dh;
+            }
+        });
     }
     function makeLeaf(n, scale) {
         const pg = pages[n - 1];
@@ -502,19 +526,10 @@
         const same = idx === renderedSpread && spread.children.length === spreads[idx].length;
         curSpread = idx;
         renderedSpread = idx;
-        const scale = fitScaleFor(spreads[idx]) * userZoom;
         if (same) {
-            spreads[idx].forEach((n, i) => {
-                const pg = pages[n - 1], dw = Math.round(pg.w * scale), dh = Math.round(pg.h * scale), lf = spread.children[i];
-                lf.style.width = dw + "px";
-                lf.style.height = dh + "px";
-                const im = lf.querySelector("img");
-                if (im) {
-                    im.width = dw;
-                    im.height = dh;
-                }
-            });
+            applyScale();
         } else {
+            const scale = fitScaleFor(spreads[idx]) * userZoom;
             spread.className = "spread" + (spreads[idx].length > 1 ? " two" : "");
             const frag = document.createDocumentFragment();
             for (const n of spreads[idx]) frag.appendChild(makeLeaf(n, scale));
@@ -606,7 +621,7 @@
         }));
     }
     function zoom(d) {
-        userZoom = Math.max(.5, Math.min(3, +(userZoom + d).toFixed(2)));
+        userZoom = Math.max(1, Math.min(4, +(userZoom + d).toFixed(2)));
         showSpread(curSpread);
     }
     function download() {
@@ -620,12 +635,12 @@
     let panX = 0, panY = 0, drag = null;
     const stageEl = $("#stage"), spreadEl = $("#spread");
     function pannable() {
-        const sp = spreadEl.getBoundingClientRect(), st = stageEl.getBoundingClientRect();
-        return sp.width > st.width + 2 || sp.height > st.height + 2;
+        const g = geom();
+        return g.SW > g.StW + 2 || g.SH > g.StH + 2;
     }
     function clampPan() {
-        const sp = spreadEl.getBoundingClientRect(), st = stageEl.getBoundingClientRect();
-        const sx = Math.max(0, (sp.width - st.width) / 2), sy = Math.max(0, (sp.height - st.height) / 2);
+        const g = geom();
+        const sx = Math.max(0, (g.SW - g.StW) / 2), sy = Math.max(0, (g.SH - g.StH) / 2);
         panX = Math.max(-sx, Math.min(sx, panX));
         panY = Math.max(-sy, Math.min(sy, panY));
     }
@@ -643,42 +658,81 @@
         stageEl.classList.toggle("zoomin", !p);
         if (!p) stageEl.classList.remove("grabbing");
     }
-    async function zoomToPoint(clientX, clientY, target) {
-        const old = spreadEl.getBoundingClientRect();
-        const fx = Math.max(0, Math.min(1, (clientX - old.left) / old.width));
-        const fy = Math.max(0, Math.min(1, (clientY - old.top) / old.height));
-        userZoom = Math.max(.5, Math.min(3, target));
-        await showSpread(curSpread);
-        const nr = spreadEl.getBoundingClientRect();
-        panX = (.5 - fx) * nr.width;
-        panY = (.5 - fy) * nr.height;
+    function setZoom(nz, cx, cy, center) {
+        const sp = spreadEl.getBoundingClientRect();
+        const fx = sp.width ? Math.max(0, Math.min(1, (cx - sp.left) / sp.width)) : .5;
+        const fy = sp.height ? Math.max(0, Math.min(1, (cy - sp.top) / sp.height)) : .5;
+        userZoom = Math.max(1, Math.min(4, nz));
+        applyScale();
+        const g = geom(), st = stageEl.getBoundingClientRect();
+        if (center) {
+            panX = g.SW * (.5 - fx);
+            panY = g.SH * (.5 - fy);
+        } else {
+            panX = cx - st.left - g.StW / 2 - (fx - .5) * g.SW;
+            panY = cy - st.top - g.StH / 2 - (fy - .5) * g.SH;
+        }
         clampPan();
         applyPan();
+        updateChrome();
     }
+    function resetZoom() {
+        userZoom = 1;
+        showSpread(curSpread);
+    }
+    function clickZoom(cx, cy) {
+        const fit = fitScaleFor(spreads[curSpread]);
+        setZoom(Math.max(1.3, Math.min(4, 1.5 / fit)), cx, cy, true);
+    }
+    const pointers = new Map;
+    let pinch = null;
     stageEl.addEventListener("pointerdown", e => {
         if (e.target.closest(".hot") || e.target.closest(".nav")) return;
-        drag = {
+        pointers.set(e.pointerId, {
             x: e.clientX,
-            y: e.clientY,
-            px: panX,
-            py: panY,
-            moved: 0,
-            pan: pannable()
-        };
+            y: e.clientY
+        });
         try {
             stageEl.setPointerCapture(e.pointerId);
         } catch (_) {}
-        if (drag.pan) stageEl.classList.add("grabbing");
+        if (pointers.size === 2) {
+            const p = [ ...pointers.values() ];
+            pinch = {
+                d0: Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) || 1,
+                z0: userZoom
+            };
+            drag = null;
+            stageEl.classList.remove("grabbing");
+        } else if (pointers.size === 1) {
+            drag = {
+                x: e.clientX,
+                y: e.clientY,
+                px: panX,
+                py: panY,
+                moved: 0,
+                pan: pannable()
+            };
+            if (drag.pan) stageEl.classList.add("grabbing");
+        }
     });
     stageEl.addEventListener("pointermove", e => {
-        if (!drag) return;
-        const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-        drag.moved = Math.max(drag.moved, Math.abs(dx) + Math.abs(dy));
-        if (drag.pan) {
-            panX = drag.px + dx;
-            panY = drag.py + dy;
-            clampPan();
-            applyPan();
+        const rec = pointers.get(e.pointerId);
+        if (!rec) return;
+        rec.x = e.clientX;
+        rec.y = e.clientY;
+        if (pinch && pointers.size >= 2) {
+            const p = [ ...pointers.values() ];
+            const d = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) || 1;
+            setZoom(pinch.z0 * d / pinch.d0, (p[0].x + p[1].x) / 2, (p[0].y + p[1].y) / 2, false);
+        } else if (drag) {
+            const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+            drag.moved = Math.max(drag.moved, Math.abs(dx) + Math.abs(dy));
+            if (drag.pan) {
+                panX = drag.px + dx;
+                panY = drag.py + dy;
+                clampPan();
+                applyPan();
+            }
         }
     });
     function endDrag(e) {
@@ -687,21 +741,32 @@
         drag = null;
         stageEl.classList.remove("grabbing");
         if (moved < 6) {
-            if (wasPan) {
-                userZoom = 1;
-                showSpread(curSpread);
-            } else {
-                zoomToPoint(e.clientX, e.clientY, 2.2);
-            }
+            wasPan ? resetZoom() : clickZoom(e.clientX, e.clientY);
         } else if (!wasPan && Math.abs(dx) > 50) {
             dx < 0 ? next() : prev();
         }
     }
-    stageEl.addEventListener("pointerup", endDrag);
-    stageEl.addEventListener("pointercancel", () => {
-        drag = null;
-        stageEl.classList.remove("grabbing");
-    });
+    function endPointer(e) {
+        if (!pointers.has(e.pointerId)) return;
+        pointers.delete(e.pointerId);
+        if (pointers.size < 2) pinch = null;
+        if (pointers.size === 0) {
+            if (drag) endDrag(e);
+        } else if (pointers.size === 1) {
+            const p = [ ...pointers.values() ][0];
+            drag = {
+                x: p.x,
+                y: p.y,
+                px: panX,
+                py: panY,
+                moved: 99,
+                pan: pannable()
+            };
+        }
+        if (!pointers.size) stageEl.classList.remove("grabbing");
+    }
+    stageEl.addEventListener("pointerup", endPointer);
+    stageEl.addEventListener("pointercancel", endPointer);
     const NAV_MAX_W = 190, NAV_MAX_H = 150;
     const navEl = $("#navigator"), navView = $("#navView"), navRect = $("#navRect");
     let navSpread = -1, navW = 0, navH = 0;
@@ -736,10 +801,9 @@
         if (zv) zv.textContent = Math.round(userZoom * 100) + "%";
         if (!p) return;
         if (navSpread !== curSpread || !navW) buildNavigator();
-        const sp = spreadEl.getBoundingClientRect(), st = stageEl.getBoundingClientRect();
-        const SW = sp.width, SH = sp.height, StW = st.width, StH = st.height;
-        const rw = Math.min(1, StW / SW) * navW, rh = Math.min(1, StH / SH) * navH;
-        const cx = .5 - panX / SW, cy = .5 - panY / SH;
+        const g = geom();
+        const rw = Math.min(1, g.StW / g.SW) * navW, rh = Math.min(1, g.StH / g.SH) * navH;
+        const cx = .5 - panX / g.SW, cy = .5 - panY / g.SH;
         let rx = cx * navW - rw / 2, ry = cy * navH - rh / 2;
         rx = Math.max(0, Math.min(navW - rw, rx));
         ry = Math.max(0, Math.min(navH - rh, ry));
@@ -750,11 +814,11 @@
     }
     function navPointTo(clientX, clientY) {
         const r = navView.getBoundingClientRect();
-        const cxFrac = Math.max(0, Math.min(1, (clientX - r.left) / navW));
-        const cyFrac = Math.max(0, Math.min(1, (clientY - r.top) / navH));
-        const sp = spreadEl.getBoundingClientRect();
-        panX = sp.width * (.5 - cxFrac);
-        panY = sp.height * (.5 - cyFrac);
+        const fx = Math.max(0, Math.min(1, (clientX - r.left) / navW));
+        const fy = Math.max(0, Math.min(1, (clientY - r.top) / navH));
+        const g = geom();
+        panX = g.SW * (.5 - fx);
+        panY = g.SH * (.5 - fy);
         clampPan();
         applyPan();
     }
