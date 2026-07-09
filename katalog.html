@@ -100,6 +100,7 @@
   }
   .stage.grab{cursor:grab}
   .stage.grabbing{cursor:grabbing}
+  .stage.zoomin{cursor:zoom-in}
   .spread{position:relative;display:flex;gap:0;box-shadow:var(--shadow);background:#fff;transition:opacity .18s}
   .spread.turning{opacity:.35}
   .leaf{position:relative;background:#fff}
@@ -593,7 +594,20 @@
     function updateGrabCursor() {
         const p = pannable();
         stageEl.classList.toggle("grab", p);
+        stageEl.classList.toggle("zoomin", !p);
         if (!p) stageEl.classList.remove("grabbing");
+    }
+    async function zoomToPoint(clientX, clientY, target) {
+        const old = spreadEl.getBoundingClientRect();
+        const fx = Math.max(0, Math.min(1, (clientX - old.left) / old.width));
+        const fy = Math.max(0, Math.min(1, (clientY - old.top) / old.height));
+        userZoom = Math.max(.5, Math.min(3, target));
+        await showSpread(curSpread);
+        const nr = spreadEl.getBoundingClientRect();
+        panX = (.5 - fx) * nr.width;
+        panY = (.5 - fy) * nr.height;
+        clampPan();
+        applyPan();
     }
     stageEl.addEventListener("pointerdown", e => {
         if (e.target.closest(".hot") || e.target.closest(".nav")) return;
@@ -627,8 +641,12 @@
         drag = null;
         stageEl.classList.remove("grabbing");
         if (moved < 6) {
-            const r = stageEl.getBoundingClientRect();
-            if (e.clientX > r.left + r.width * .6) next(); else if (e.clientX < r.left + r.width * .4) prev();
+            if (wasPan) {
+                userZoom = 1;
+                showSpread(curSpread);
+            } else {
+                zoomToPoint(e.clientX, e.clientY, 2.2);
+            }
         } else if (!wasPan && Math.abs(dx) > 50) {
             dx < 0 ? next() : prev();
         }
