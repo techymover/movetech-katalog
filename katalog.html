@@ -101,7 +101,8 @@
   .stage.grab{cursor:grab}
   .stage.grabbing{cursor:grabbing}
   .stage.zoomin{cursor:zoom-in}
-  .spread{position:relative;display:flex;gap:0;box-shadow:var(--shadow);background:#fff;transition:opacity .18s}
+
+  .spread{position:absolute;left:50%;top:50%;display:flex;gap:0;box-shadow:var(--shadow);background:#fff;transition:opacity .18s}
   .spread.turning{opacity:.35}
   .leaf{position:relative;background:#fff}
   .leaf canvas{display:block}
@@ -645,7 +646,7 @@
         panY = Math.max(-sy, Math.min(sy, panY));
     }
     function applyPan() {
-        spreadEl.style.transform = panX || panY ? `translate(${panX}px,${panY}px)` : "";
+        spreadEl.style.transform = `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px))`;
         updateNavigator();
     }
     function resetPan() {
